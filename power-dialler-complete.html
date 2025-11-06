@@ -1525,25 +1525,42 @@
 
             async makeCall(contact) {
                 // Try multiple methods to make the call
+                // IMPORTANT: In cross-origin iframes, postMessage/click methods work best
+                // So we'll try those FIRST, then fall back to SDK methods
                 try {
                     let callResult = null;
                     let methodUsed = null;
                     
+                    console.log('📞 Making call to:', contact.name, 'at', contact.phone);
+                    
                     // Log what SDK we have
                     if (this.zohoVoiceSDK) {
-                        console.log('📞 Attempting call with SDK:', this.sdkLocation);
-                        console.log('SDK object:', this.zohoVoiceSDK);
-                        const availableMethods = Object.keys(this.zohoVoiceSDK).filter(key => 
-                            typeof this.zohoVoiceSDK[key] === 'function'
-                        );
-                        console.log('Available SDK methods:', availableMethods);
+                        console.log('📞 SDK detected:', this.sdkLocation);
+                        console.log('SDK object keys:', Object.keys(this.zohoVoiceSDK));
                         
-                        // Check if it's a mock SDK (has _postMessage flag)
-                        if (this.zohoVoiceSDK._postMessage) {
-                            console.log('⚠️ Mock SDK detected - will use postMessage/click methods instead');
-                            // Don't use mock SDK, skip to real methods below
+                        // Check if it's a mock SDK (has _postMessage or _usePostMessage flag)
+                        if (this.zohoVoiceSDK._postMessage || this.zohoVoiceSDK._usePostMessage) {
+                            console.log('⚠️ Mock SDK detected - SKIPPING SDK methods, will use postMessage/click methods');
+                            // Don't use mock SDK at all, skip to real methods below
+                            callResult = null;
                         } else {
+                            // Real SDK - but in iframe, try postMessage first anyway
+                            console.log('⚠️ Real SDK found, but in iframe - will try postMessage first, then SDK');
+                            // We'll try SDK methods after postMessage
+                        }
+                    } else {
+                        console.log('⚠️ No SDK found - will use postMessage/click methods');
+                    }
+                    
+                    // SKIP SDK METHODS FOR NOW - try postMessage/click first
+                    // We'll come back to SDK methods if postMessage doesn't work
+                    if (false && this.zohoVoiceSDK && !this.zohoVoiceSDK._postMessage && !this.zohoVoiceSDK._usePostMessage) {
                             // Real SDK - try its methods
+                            const availableMethods = Object.keys(this.zohoVoiceSDK).filter(key => 
+                                typeof this.zohoVoiceSDK[key] === 'function'
+                            );
+                            console.log('Available SDK methods:', availableMethods);
+                            
                             if (typeof this.zohoVoiceSDK.makeCall === 'function') {
                                 try {
                                     methodUsed = 'SDK.makeCall()';
@@ -1554,7 +1571,7 @@
                                     });
                                     console.log('SDK.makeCall() result:', callResult);
                                     // If it returns but doesn't actually call, continue to other methods
-                                    if (callResult && callResult.method === 'postMessage') {
+                                    if (callResult && (callResult.method === 'postMessage' || callResult.method === 'phonebridge_postMessage')) {
                                         console.log('SDK.makeCall() returned postMessage - trying direct methods');
                                         callResult = null; // Try other methods
                                     }
@@ -1668,11 +1685,11 @@
                         } catch (e) {}
                     }
                     
-                    // Method 2: Try PhoneBridge SDK via postMessage FIRST (most reliable for iframes)
-                    // Always try this even if SDK was found, since direct SDK access might not work in iframe
-                    if (!callResult || (this.zohoVoiceSDK && this.zohoVoiceSDK._postMessage)) {
-                        console.log('📞 Attempting PhoneBridge SDK communication via postMessage...');
-                        try {
+                    // Method 1: Try PhoneBridge SDK via postMessage FIRST (most reliable for iframes)
+                    // ALWAYS try this first since we're in an iframe
+                    console.log('📞 STEP 1: Attempting PhoneBridge SDK communication via postMessage...');
+                    console.log('📞 Phone number to dial:', contact.phone);
+                    try {
                             // PhoneBridge SDK uses specific message formats
                             // Send messages to parent window where PhoneBridge is active
                             const phoneBridgeMessages = [
@@ -1781,8 +1798,10 @@
                             // PhoneBridge should handle this
                             methodUsed = 'PhoneBridge postMessage + click';
                             callResult = { success: true, method: 'phonebridge_postMessage' };
+                            console.log('✅ Call method completed - check if ZDialer/PhoneBridge responded');
                         } catch (e) {
-                            console.log('PhoneBridge postMessage failed:', e.message);
+                            console.log('❌ PhoneBridge postMessage failed:', e.message);
+                            callResult = null;
                         }
                     }
                     
