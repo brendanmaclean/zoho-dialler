@@ -4,10 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Power Dialler</title>
-    <!-- Force reload -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <!-- Force reload - NO CACHE -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <script>
+        // AGGRESSIVE CACHE BUSTING - Force reload if cached
+        if (window.location.search.indexOf('nocache=') === -1) {
+            window.location.search = '?nocache=' + new Date().getTime();
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -468,6 +474,7 @@
             <div class="header-left">
                 <span class="phone-icon">📞</span>
                 <span class="header-title">Power Dialler</span>
+                <span id="loadTime" style="font-size: 10px; opacity: 0.7; margin-left: 10px;"></span>
             </div>
             <div class="header-right">
                 <button class="icon-button" id="settingsBtn" title="Settings">
@@ -1711,6 +1718,15 @@
             }
         }
 
+        // Show load time to verify fresh load
+        const loadTime = new Date().toLocaleTimeString();
+        const loadTimeEl = document.getElementById('loadTime');
+        if (loadTimeEl) {
+            loadTimeEl.textContent = 'Loaded: ' + loadTime;
+            console.log('🕐 Page loaded at:', loadTime);
+            console.log('🔄 Cache buster:', window.location.search);
+        }
+
         // Initialize the Power Dialler when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -1725,6 +1741,13 @@
                 }, 10000);
             });
         } else {
+            // Show load time immediately if DOM already ready
+            const loadTime = new Date().toLocaleTimeString();
+            const loadTimeEl = document.getElementById('loadTime');
+            if (loadTimeEl) {
+                loadTimeEl.textContent = 'Loaded: ' + loadTime;
+                console.log('🕐 Page loaded at:', loadTime);
+            }
             window.powerDialler = new PowerDialler();
             
             // Stop retrying after 10 seconds
