@@ -1711,17 +1711,26 @@
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 window.powerDialler = new PowerDialler();
+                
+                // Stop retrying after 10 seconds - SDK won't be available in iframe
+                setTimeout(() => {
+                    if (window.powerDialler && !window.powerDialler.zohoCRMSDK) {
+                        console.log('ℹ️ CRM SDK not available - widget will work in manual mode');
+                        console.log('💡 Use "+ Add Test Contacts" button to add contacts manually');
+                    }
+                }, 10000);
             });
         } else {
             window.powerDialler = new PowerDialler();
+            
+            // Stop retrying after 10 seconds
+            setTimeout(() => {
+                if (window.powerDialler && !window.powerDialler.zohoCRMSDK) {
+                    console.log('ℹ️ CRM SDK not available - widget will work in manual mode');
+                    console.log('💡 Use "+ Add Test Contacts" button to add contacts manually');
+                }
+            }, 10000);
         }
-
-        // Re-check CRM SDK periodically (in case it loads asynchronously)
-        setInterval(() => {
-            if (window.powerDialler && !window.powerDialler.zohoCRMSDK) {
-                window.powerDialler.checkCRMSDK();
-            }
-        }, 2000);
     </script>
 </body>
 </html>
