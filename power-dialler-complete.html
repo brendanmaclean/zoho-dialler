@@ -723,7 +723,7 @@
                 this.sdkCheckAttempts++;
                 
                 if (this.sdkCheckAttempts < 5) {
-                    console.warn(⚠️ Zoho CRM SDK not detected (attempt ${this.sdkCheckAttempts}/5)`);
+                    console.warn(`⚠️ Zoho CRM SDK not detected (attempt ${this.sdkCheckAttempts}/5)`);
                     console.log('Widget is running in:', window.location.href);
                     console.log('Is iframe:', window.self !== window.top);
                     
@@ -856,7 +856,21 @@
                         }
                     }
                     
-                    // Method 6: Check for ZDialer extension (even if SDK not found, extension might work via postMessage)
+                    // Method 6: Check for PhoneBridge SDK (we see it loading in console!)
+                    if (!SDK && typeof window !== 'undefined') {
+                        // PhoneBridge SDK is loading (we see phonebridge-sdk.js in console)
+                        // Mark it as available for postMessage communication
+                        console.log('✅ PhoneBridge SDK detected (will use postMessage)');
+                        // Create a mock SDK object that indicates postMessage is available
+                        SDK = {
+                            _postMessage: true,
+                            _sdk: 'PhoneBridge',
+                            makeCall: () => Promise.resolve({ method: 'phonebridge_postMessage' })
+                        };
+                        sdkLocation = 'PhoneBridge (postMessage)';
+                    }
+                    
+                    // Method 6b: Check for ZDialer extension (even if SDK not found, extension might work via postMessage)
                     if (!SDK && typeof window !== 'undefined') {
                         // Check if ZDialer extension is installed (it injects content scripts)
                         // We can't directly access it, but we know it's there from console messages
@@ -1618,7 +1632,105 @@
                         } catch (e) {}
                     }
                     
-                    // Method 4: Try postMessage to ZDialer extension (for cross-origin iframes)
+                    // Method 4: Try PhoneBridge SDK via postMessage (PhoneBridge is loading!)
+                    if (!callResult) {
+                        console.log('Attempting PhoneBridge SDK communication...');
+                        try {
+                            // PhoneBridge SDK uses specific message formats
+                            // Send messages to parent window where PhoneBridge is active
+                            const phoneBridgeMessages = [
+                                { 
+                                    type: 'PHONEBRIDGE_DIAL',
+                                    phoneNumber: contact.phone,
+                                    contactId: contact.id,
+                                    contactName: contact.name,
+                                    source: 'power-dialler-widget'
+                                },
+                                {
+                                    action: 'phonebridge.call',
+                                    number: contact.phone,
+                                    contact: { id: contact.id, name: contact.name }
+                                },
+                                {
+                                    event: 'phonebridge.dial',
+                                    phone: contact.phone,
+                                    contactId: contact.id
+                                },
+                                // Try PhoneBridge's internal format
+                                {
+                                    method: 'dial',
+                                    params: {
+                                        phoneNumber: contact.phone,
+                                        contactId: contact.id,
+                                        contactName: contact.name
+                                    },
+                                    source: 'widget'
+                                }
+                            ];
+                            
+                            for (const msg of phoneBridgeMessages) {
+                                if (window.parent && window.parent !== window) {
+                                    window.parent.postMessage(msg, '*');
+                                }
+                                if (window.top && window.top !== window) {
+                                    window.top.postMessage(msg, '*');
+                                }
+                            }
+                            
+                            // Also try creating a clickable element that PhoneBridge might detect
+                            // PhoneBridge often intercepts clicks on phone number elements
+                            const phoneElement = document.createElement('span');
+                            phoneElement.textContent = contact.phone;
+                            phoneElement.style.position = 'absolute';
+                            phoneElement.style.left = '-9999px';
+                            phoneElement.setAttribute('data-phone', contact.phone);
+                            phoneElement.setAttribute('data-contact-id', contact.id || '');
+                            phoneElement.setAttribute('class', 'phone-number');
+                            phoneElement.setAttribute('data-zoho-call', 'true');
+                            // Some PhoneBridge implementations look for these attributes
+                            phoneElement.setAttribute('data-pb-dial', contact.phone);
+                            phoneElement.setAttribute('onclick', `javascript:void(0)`);
+                            document.body.appendChild(phoneElement);
+                            
+                            // Try clicking it (PhoneBridge might intercept)
+                            const clickEvent = new MouseEvent('click', {
+                                view: window,
+                                bubbles: true,
+                                cancelable: true
+                            });
+                            phoneElement.dispatchEvent(clickEvent);
+                            
+                            // Also try a tel: link (PhoneBridge might intercept this too)
+                            const telLink = document.createElement('a');
+                            telLink.href = `tel:${contact.phone}`;
+                            telLink.textContent = contact.phone;
+                            telLink.style.position = 'absolute';
+                            telLink.style.left = '-9999px';
+                            telLink.setAttribute('data-phone', contact.phone);
+                            telLink.setAttribute('data-pb-dial', contact.phone);
+                            document.body.appendChild(telLink);
+                            telLink.click();
+                            
+                            // Clean up after a delay
+                            setTimeout(() => {
+                                if (phoneElement.parentNode) {
+                                    phoneElement.parentNode.removeChild(phoneElement);
+                                }
+                                if (telLink.parentNode) {
+                                    telLink.parentNode.removeChild(telLink);
+                                }
+                            }, 2000);
+                            
+                            console.log('✅ Sent PhoneBridge dial request via postMessage + click events');
+                            // PhoneBridge should handle this
+                            methodUsed = 'PhoneBridge postMessage + click';
+                            callResult = { success: true, method: 'phonebridge_postMessage' };
+                        } catch (e) {
+                            console.log('PhoneBridge postMessage failed:', e.message);
+                        }
+                    }
+                    
+                    // Method 4b: Try postMessage to ZDialer extension (for cross-origin iframes)
                     if (!callResult) {
                         console.log('Attempting postMessage to ZDialer extension...');
                         try {
