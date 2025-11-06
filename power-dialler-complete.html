@@ -304,22 +304,41 @@
             flex: 1;
             background: white;
             color: #374151;
-            border: 1px solid #d1d5db;
-            padding: 10px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            border: 2px solid #3b82f6;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
             transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
         }
 
         .btn-queue:hover {
-            background: #f9fafb;
-            border-color: #9ca3af;
+            background: #eff6ff;
+            border-color: #2563eb;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-queue:active {
+            transform: translateY(0);
+        }
+
+        /* Make the "+ Test Contacts" button more prominent */
+        #addTestContactsBtn {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+
+        #addTestContactsBtn:hover {
+            background: #059669;
+            border-color: #059669;
         }
 
         .queue-empty {
@@ -541,23 +560,31 @@
                 </svg>
                 CRM SDK not detected
             </div>
-            <div class="queue-actions">
-                <button class="btn-queue" id="addFromCrmBtn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    Add from CRM
-                </button>
-                <button class="btn-queue" id="addTestContactsBtn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    + Test Contacts
-                </button>
+            <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                <div style="font-weight: 600; color: #1e40af; margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    📞 ADD CONTACTS TO QUEUE
+                </div>
+                <div class="queue-actions">
+                    <button class="btn-queue" id="addFromCrmBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Add from CRM
+                    </button>
+                    <button class="btn-queue" id="addTestContactsBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        + Add Test Contacts
+                    </button>
+                </div>
+                <div style="font-size: 12px; color: #6b7280; margin-top: 8px; text-align: center;">
+                    💡 Click "+ Add Test Contacts" to start testing immediately
+                </div>
             </div>
             <div class="queue-empty" id="queueEmpty">
                 <div class="phone-icon-large">📞</div>
@@ -636,7 +663,7 @@
             }
 
             checkCRMSDK() {
-                // Check current window
+                // Check current window first
                 if (typeof ZOHO !== 'undefined' && ZOHO.CRM) {
                     this.zohoCRMSDK = ZOHO.CRM;
                     console.log('✅ Zoho CRM SDK detected in current window');
@@ -657,7 +684,10 @@
                         }
                     }
                 } catch (e) {
-                    console.log('Cannot access parent window (cross-origin):', e.message);
+                    console.log('Cannot access parent window directly (cross-origin):', e.message);
+                    console.log('Trying postMessage method...');
+                    // Try postMessage approach
+                    this.requestSDKViaPostMessage();
                 }
                 
                 // Check top window
@@ -675,21 +705,58 @@
                     console.log('Cannot access top window (cross-origin):', e.message);
                 }
                 
-                // If still not found, wait and retry
-                console.warn('⚠️ Zoho CRM SDK not detected immediately');
-                console.log('Widget is running in:', window.location.href);
-                console.log('Is iframe:', window.self !== window.top);
+                // If still not found, wait and retry (but limit retries)
+                if (!this.sdkCheckAttempts) {
+                    this.sdkCheckAttempts = 0;
+                }
+                this.sdkCheckAttempts++;
                 
-                // Retry after a delay
-                setTimeout(() => {
-                    this.checkCRMSDK();
-                }, 2000);
+                if (this.sdkCheckAttempts < 5) {
+                    console.warn(`⚠️ Zoho CRM SDK not detected (attempt ${this.sdkCheckAttempts}/5)`);
+                    console.log('Widget is running in:', window.location.href);
+                    console.log('Is iframe:', window.self !== window.top);
+                    
+                    // Retry after a delay
+                    setTimeout(() => {
+                        this.checkCRMSDK();
+                    }, 2000);
+                } else {
+                    console.error('❌ Could not detect CRM SDK after multiple attempts');
+                    console.log('Widget may need to be configured differently or SDK may not be available in this context');
+                }
+            }
+            
+            requestSDKViaPostMessage() {
+                // Listen for response from parent
+                window.addEventListener('message', (event) => {
+                    // Verify origin for security
+                    if (event.origin.includes('zoho.com') || event.origin.includes('zoho.in')) {
+                        if (event.data && event.data.type === 'ZOHO_SDK_RESPONSE' && event.data.sdk) {
+                            console.log('✅ Received SDK via postMessage');
+                            // Note: We can't directly use the SDK object from postMessage
+                            // Instead, we'll try to access it again after parent confirms
+                            this.checkCRMSDK();
+                        }
+                    }
+                });
+                
+                // Request SDK from parent
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({
+                            type: 'REQUEST_ZOHO_SDK',
+                            source: 'power-dialler-widget'
+                        }, '*'); // In production, specify exact origin
+                    } catch (e) {
+                        console.log('Cannot send postMessage:', e.message);
+                    }
+                }
             }
 
             async initZohoVoiceSDK() {
                 try {
-                    // Wait longer for SDKs to load
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    // Wait longer for SDKs to load - PhoneBridge takes time
+                    await new Promise(resolve => setTimeout(resolve, 3000));
                     
                     let SDK = null;
                     let sdkLocation = null;
@@ -755,7 +822,30 @@
                         }
                     }
                     
-                    // Method 5: Check for click-to-call functionality (fallback)
+                    // Method 5: Check PhoneBridge SDK (which we see loading in console)
+                    if (!SDK && typeof window !== 'undefined') {
+                        // PhoneBridge SDK might be available via different names
+                        const pbCheck = () => {
+                            if (window.PhoneBridge) return window.PhoneBridge;
+                            if (window.ZPB) return window.ZPB;
+                            if (window.ZohoPhoneBridge) return window.ZohoPhoneBridge;
+                            // Check for PhoneBridge in parent
+                            try {
+                                if (window.parent && window.parent.PhoneBridge) return window.parent.PhoneBridge;
+                                if (window.parent && window.parent.ZPB) return window.parent.ZPB;
+                            } catch (e) {}
+                            return null;
+                        };
+                        
+                        const pbSDK = pbCheck();
+                        if (pbSDK) {
+                            SDK = pbSDK;
+                            sdkLocation = 'PhoneBridge';
+                            console.log('✅ Found PhoneBridge SDK');
+                        }
+                    }
+                    
+                    // Method 6: Check for click-to-call functionality (fallback)
                     if (!SDK && typeof window !== 'undefined' && window.ZOHO && window.ZOHO.CRM && window.ZOHO.CRM.UI) {
                         // Try to use CRM's built-in call functionality
                         console.log('⚠️ Direct Voice SDK not found, checking for CRM call functions...');
@@ -1087,17 +1177,57 @@
             }
 
             async addFromCRM() {
+                // Try to get SDK one more time
                 if (!this.zohoCRMSDK) {
-                    alert('CRM SDK not available. Please ensure you are running this widget within Zoho CRM.');
+                    console.log('SDK not found, attempting to re-check...');
+                    this.checkCRMSDK();
+                    
+                    // Wait a moment for SDK check
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Try parent window one more time
+                    try {
+                        if (window.parent && window.parent !== window && window.parent.ZOHO && window.parent.ZOHO.CRM) {
+                            this.zohoCRMSDK = window.parent.ZOHO.CRM;
+                            console.log('✅ Got CRM SDK from parent window on retry');
+                        }
+                    } catch (e) {
+                        console.log('Still cannot access parent window:', e.message);
+                    }
+                }
+                
+                if (!this.zohoCRMSDK) {
+                    // Provide helpful error message with alternatives
+                    const message = `⚠️ CRM SDK Not Available\n\n` +
+                        `This widget is running in a Web Tab iframe, which prevents direct access to the CRM SDK.\n\n` +
+                        `📋 Alternatives:\n` +
+                        `1. Use "Add Test Contacts" button to add contacts manually\n` +
+                        `2. Tag contacts in CRM with "Power Dial" tag, then refresh this page\n` +
+                        `3. Try using Related List instead of Web Tab (better SDK access)\n\n` +
+                        `💡 The dialler will still work - you just need to add contacts manually.`;
+                    
+                    alert(message);
+                    
+                    // Show helpful UI message
+                    this.showSDKWarning();
                     return;
                 }
 
                 try {
+                    this.updateCallStatus('Loading contacts from CRM...', 'calling');
                     await this.loadQueueFromCRM();
-                    alert(`Loaded ${this.queue.length} records from CRM`);
+                    
+                    if (this.queue.length > 0) {
+                        alert(`✅ Loaded ${this.queue.length} contact(s) from CRM`);
+                        this.updateCallStatus('Ready', 'idle');
+                    } else {
+                        alert(`ℹ️ No contacts found with tag "Power Dial"\n\nPlease tag some contacts in CRM with "Power Dial" tag and try again.`);
+                        this.updateCallStatus('No contacts found', 'idle');
+                    }
                 } catch (error) {
                     console.error('Error adding from CRM:', error);
-                    alert('Error loading records from CRM. Please try again.');
+                    alert(`❌ Error loading records from CRM:\n\n${error.message}\n\nPlease try:\n1. Refresh the page\n2. Use "Add Test Contacts" instead\n3. Check browser console for details`);
+                    this.updateCallStatus('Error loading contacts', 'idle');
                 }
             }
 
@@ -1113,6 +1243,9 @@
                 this.queue = [...this.queue, ...testContacts];
                 this.updateQueueDisplay();
                 this.updateStatistics();
+                
+                console.log(`✅ Added ${testContacts.length} test contacts to queue`);
+                console.log('💡 Tip: Replace these with real contacts from your CRM');
             }
 
             startCalling() {
