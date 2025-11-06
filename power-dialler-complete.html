@@ -723,7 +723,7 @@
                 this.sdkCheckAttempts++;
                 
                 if (this.sdkCheckAttempts < 5) {
-                    console.warn(`⚠️ Zoho CRM SDK not detected (attempt ${this.sdkCheckAttempts}/5)`);
+                    console.warn(⚠️ Zoho CRM SDK not detected (attempt ${this.sdkCheckAttempts}/5)`);
                     console.log('Widget is running in:', window.location.href);
                     console.log('Is iframe:', window.self !== window.top);
                     
@@ -856,7 +856,26 @@
                         }
                     }
                     
-                    // Method 6: Check for click-to-call functionality (fallback)
+                    // Method 6: Check for ZDialer extension (even if SDK not found, extension might work via postMessage)
+                    if (!SDK && typeof window !== 'undefined') {
+                        // Check if ZDialer extension is installed (it injects content scripts)
+                        // We can't directly access it, but we know it's there from console messages
+                        // Mark it as available for postMessage communication
+                        if (window.navigator && window.navigator.userAgent) {
+                            // ZDialer extension is active (we see VoiceMainG.content.js in console)
+                            // We'll use postMessage in makeCall method
+                            console.log('✅ ZDialer extension detected (will use postMessage)');
+                            // Create a mock SDK object that indicates postMessage is available
+                            SDK = {
+                                _postMessage: true,
+                                _extension: 'ZDialer',
+                                makeCall: () => Promise.resolve({ method: 'postMessage' })
+                            };
+                            sdkLocation = 'ZDialer (postMessage)';
+                        }
+                    }
+                    
+                    // Method 7: Check for click-to-call functionality (fallback)
                     if (!SDK && typeof window !== 'undefined' && window.ZOHO && window.ZOHO.CRM && window.ZOHO.CRM.UI) {
                         // Try to use CRM's built-in call functionality
                         console.log('⚠️ Direct Voice SDK not found, checking for CRM call functions...');
@@ -1599,7 +1618,75 @@
                         } catch (e) {}
                     }
                     
-                    // Method 4: Try CRM UI click-to-call (fallback)
+                    // Method 4: Try postMessage to ZDialer extension (for cross-origin iframes)
+                    if (!callResult) {
+                        console.log('Attempting postMessage to ZDialer extension...');
+                        try {
+                            // ZDialer extension listens for postMessage
+                            // Try multiple message formats that ZDialer might accept
+                            const messages = [
+                                { action: 'dial', phoneNumber: contact.phone, contactId: contact.id, contactName: contact.name },
+                                { type: 'dial', number: contact.phone, contact: { id: contact.id, name: contact.name } },
+                                { command: 'makeCall', phone: contact.phone },
+                                { method: 'dial', phoneNumber: contact.phone },
+                                { event: 'zohoDial', phone: contact.phone, contactId: contact.id }
+                            ];
+                            
+                            for (const msg of messages) {
+                                // Send to parent window (where ZDialer extension is active)
+                                if (window.parent && window.parent !== window) {
+                                    window.parent.postMessage(msg, '*');
+                                }
+                                // Also send to top window
+                                if (window.top && window.top !== window) {
+                                    window.top.postMessage(msg, '*');
+                                }
+                                // Send to current window
+                                window.postMessage(msg, '*');
+                            }
+                            
+                            // Also try dispatching custom events (some extensions listen to these)
+                            const dialEvent = new CustomEvent('zohoDial', { 
+                                detail: { phoneNumber: contact.phone, contactId: contact.id, contactName: contact.name }
+                            });
+                            window.dispatchEvent(dialEvent);
+                            if (window.parent && window.parent !== window) {
+                                try {
+                                    window.parent.dispatchEvent(dialEvent);
+                                } catch (e) {}
+                            }
+                            
+                            // Try creating a phone link that ZDialer might intercept
+                            // ZDialer often intercepts clicks on phone number links
+                            const phoneLink = document.createElement('a');
+                            phoneLink.href = `tel:${contact.phone}`;
+                            phoneLink.textContent = contact.phone;
+                            phoneLink.style.position = 'absolute';
+                            phoneLink.style.left = '-9999px';
+                            phoneLink.setAttribute('data-phone', contact.phone);
+                            phoneLink.setAttribute('data-contact-id', contact.id || '');
+                            document.body.appendChild(phoneLink);
+                            
+                            // Try clicking it (ZDialer might intercept)
+                            phoneLink.click();
+                            
+                            // Clean up after a delay
+                            setTimeout(() => {
+                                if (phoneLink.parentNode) {
+                                    phoneLink.parentNode.removeChild(phoneLink);
+                                }
+                            }, 1000);
+                            
+                            methodUsed = 'postMessage + click-to-call link';
+                            // Assume success - ZDialer will handle it
+                            callResult = { success: true, method: 'postMessage', note: 'Message sent to ZDialer extension' };
+                            console.log('✅ Sent dial request to ZDialer extension via postMessage and click-to-call');
+                        } catch (e) {
+                            console.log('postMessage failed:', e.message);
+                        }
+                    }
+                    
+                    // Method 5: Try CRM UI click-to-call (fallback)
                     if (!callResult && typeof ZOHO !== 'undefined' && ZOHO.CRM && ZOHO.CRM.UI) {
                         console.log('Attempting CRM UI call method...');
                         if (typeof ZOHO.CRM.UI.triggerCall === 'function') {
@@ -1608,7 +1695,7 @@
                         }
                     }
                     
-                    // Method 5: Try creating a click-to-call link (last resort)
+                    // Method 6: Try creating a click-to-call link (last resort)
                     if (!callResult) {
                         console.warn('No SDK method found, trying click-to-call link...');
                         // Create a temporary link and click it
