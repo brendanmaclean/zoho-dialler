@@ -860,12 +860,13 @@
                     if (!SDK && typeof window !== 'undefined') {
                         // PhoneBridge SDK is loading (we see phonebridge-sdk.js in console)
                         // Mark it as available for postMessage communication
-                        console.log('✅ PhoneBridge SDK detected (will use postMessage)');
+                        console.log('✅ PhoneBridge SDK detected (will use postMessage/click methods)');
                         // Create a mock SDK object that indicates postMessage is available
+                        // But makeCall will skip this and use real methods
                         SDK = {
                             _postMessage: true,
                             _sdk: 'PhoneBridge',
-                            makeCall: () => Promise.resolve({ method: 'phonebridge_postMessage' })
+                            _usePostMessage: true  // Flag to use postMessage instead
                         };
                         sdkLocation = 'PhoneBridge (postMessage)';
                     }
@@ -878,12 +879,12 @@
                         if (window.navigator && window.navigator.userAgent) {
                             // ZDialer extension is active (we see VoiceMainG.content.js in console)
                             // We'll use postMessage in makeCall method
-                            console.log('✅ ZDialer extension detected (will use postMessage)');
+                            console.log('✅ ZDialer extension detected (will use postMessage/click methods)');
                             // Create a mock SDK object that indicates postMessage is available
                             SDK = {
                                 _postMessage: true,
                                 _extension: 'ZDialer',
-                                makeCall: () => Promise.resolve({ method: 'postMessage' })
+                                _usePostMessage: true  // Flag to use postMessage instead
                             };
                             sdkLocation = 'ZDialer (postMessage)';
                         }
@@ -1528,39 +1529,74 @@
                     let callResult = null;
                     let methodUsed = null;
                     
-                    // Method 1: Use stored SDK reference
+                    // Log what SDK we have
                     if (this.zohoVoiceSDK) {
+                        console.log('📞 Attempting call with SDK:', this.sdkLocation);
+                        console.log('SDK object:', this.zohoVoiceSDK);
                         const availableMethods = Object.keys(this.zohoVoiceSDK).filter(key => 
                             typeof this.zohoVoiceSDK[key] === 'function'
                         );
                         console.log('Available SDK methods:', availableMethods);
                         
-                        if (typeof this.zohoVoiceSDK.makeCall === 'function') {
-                            methodUsed = 'SDK.makeCall()';
-                            callResult = await this.zohoVoiceSDK.makeCall({
-                                phoneNumber: contact.phone,
-                                contactId: contact.id,
-                                contactName: contact.name
-                            });
-                        } else if (typeof this.zohoVoiceSDK.initiateCall === 'function') {
-                            methodUsed = 'SDK.initiateCall()';
-                            callResult = await this.zohoVoiceSDK.initiateCall({
-                                phoneNumber: contact.phone,
-                                contactId: contact.id,
-                                contactName: contact.name
-                            });
-                        } else if (typeof this.zohoVoiceSDK.call === 'function') {
-                            methodUsed = 'SDK.call()';
-                            callResult = await this.zohoVoiceSDK.call(contact.phone, {
-                                contactId: contact.id,
-                                contactName: contact.name
-                            });
-                        } else if (typeof this.zohoVoiceSDK.dial === 'function') {
-                            methodUsed = 'SDK.dial()';
-                            callResult = await this.zohoVoiceSDK.dial(contact.phone, {
-                                contactId: contact.id,
-                                contactName: contact.name
-                            });
+                        // Check if it's a mock SDK (has _postMessage flag)
+                        if (this.zohoVoiceSDK._postMessage) {
+                            console.log('⚠️ Mock SDK detected - will use postMessage/click methods instead');
+                            // Don't use mock SDK, skip to real methods below
+                        } else {
+                            // Real SDK - try its methods
+                            if (typeof this.zohoVoiceSDK.makeCall === 'function') {
+                                try {
+                                    methodUsed = 'SDK.makeCall()';
+                                    callResult = await this.zohoVoiceSDK.makeCall({
+                                        phoneNumber: contact.phone,
+                                        contactId: contact.id,
+                                        contactName: contact.name
+                                    });
+                                    console.log('SDK.makeCall() result:', callResult);
+                                    // If it returns but doesn't actually call, continue to other methods
+                                    if (callResult && callResult.method === 'postMessage') {
+                                        console.log('SDK.makeCall() returned postMessage - trying direct methods');
+                                        callResult = null; // Try other methods
+                                    }
+                                } catch (e) {
+                                    console.log('SDK.makeCall() failed:', e.message);
+                                    callResult = null;
+                                }
+                            } else if (typeof this.zohoVoiceSDK.initiateCall === 'function') {
+                                try {
+                                    methodUsed = 'SDK.initiateCall()';
+                                    callResult = await this.zohoVoiceSDK.initiateCall({
+                                        phoneNumber: contact.phone,
+                                        contactId: contact.id,
+                                        contactName: contact.name
+                                    });
+                                } catch (e) {
+                                    console.log('SDK.initiateCall() failed:', e.message);
+                                    callResult = null;
+                                }
+                            } else if (typeof this.zohoVoiceSDK.call === 'function') {
+                                try {
+                                    methodUsed = 'SDK.call()';
+                                    callResult = await this.zohoVoiceSDK.call(contact.phone, {
+                                        contactId: contact.id,
+                                        contactName: contact.name
+                                    });
+                                } catch (e) {
+                                    console.log('SDK.call() failed:', e.message);
+                                    callResult = null;
+                                }
+                            } else if (typeof this.zohoVoiceSDK.dial === 'function') {
+                                try {
+                                    methodUsed = 'SDK.dial()';
+                                    callResult = await this.zohoVoiceSDK.dial(contact.phone, {
+                                        contactId: contact.id,
+                                        contactName: contact.name
+                                    });
+                                } catch (e) {
+                                    console.log('SDK.dial() failed:', e.message);
+                                    callResult = null;
+                                }
+                            }
                         }
                     }
                     
@@ -1632,9 +1668,10 @@
                         } catch (e) {}
                     }
                     
-                    // Method 4: Try PhoneBridge SDK via postMessage (PhoneBridge is loading!)
-                    if (!callResult) {
-                        console.log('Attempting PhoneBridge SDK communication...');
+                    // Method 2: Try PhoneBridge SDK via postMessage FIRST (most reliable for iframes)
+                    // Always try this even if SDK was found, since direct SDK access might not work in iframe
+                    if (!callResult || (this.zohoVoiceSDK && this.zohoVoiceSDK._postMessage)) {
+                        console.log('📞 Attempting PhoneBridge SDK communication via postMessage...');
                         try {
                             // PhoneBridge SDK uses specific message formats
                             // Send messages to parent window where PhoneBridge is active
@@ -1700,7 +1737,7 @@
                             });
                             phoneElement.dispatchEvent(clickEvent);
                             
-                            // Also try a tel: link (PhoneBridge might intercept this too)
+                            // Also try a tel: link (PhoneBridge/ZDialer might intercept this too)
                             const telLink = document.createElement('a');
                             telLink.href = `tel:${contact.phone}`;
                             telLink.textContent = contact.phone;
@@ -1708,8 +1745,24 @@
                             telLink.style.left = '-9999px';
                             telLink.setAttribute('data-phone', contact.phone);
                             telLink.setAttribute('data-pb-dial', contact.phone);
+                            // ZDialer often looks for these classes/attributes
+                            telLink.className = 'phone-link zoho-call';
+                            telLink.setAttribute('data-zoho-voice', 'true');
                             document.body.appendChild(telLink);
+                            
+                            // Try multiple click methods
                             telLink.click();
+                            // Also try programmatic click
+                            if (telLink.onclick) {
+                                telLink.onclick();
+                            }
+                            // Also dispatch click event
+                            const clickEvt = new MouseEvent('click', {
+                                bubbles: true,
+                                cancelable: true,
+                                view: window
+                            });
+                            telLink.dispatchEvent(clickEvt);
                             
                             // Clean up after a delay
                             setTimeout(() => {
@@ -1720,6 +1773,9 @@
                                     telLink.parentNode.removeChild(telLink);
                                 }
                             }, 2000);
+                            
+                            // Note: Cannot access parent.document due to cross-origin restrictions
+                            // But postMessage and tel: links should work
                             
                             console.log('✅ Sent PhoneBridge dial request via postMessage + click events');
                             // PhoneBridge should handle this
