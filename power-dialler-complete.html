@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Dialler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .widget-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: #1e3a8a;
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .phone-icon {
+            font-size: 20px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-button {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .icon-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Statistics Cards */
+        .stats-container {
+            display: flex;
+            gap: 12px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: #2563eb;
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        /* Controls Section */
+        .controls-section {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .controls-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .primary-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .primary-controls .btn-primary {
+            flex: 1;
+        }
+
+        .btn-pause {
+            background: #f59e0b !important;
+        }
+
+        .btn-pause:hover {
+            background: #d97706 !important;
+        }
+
+        .btn-next {
+            background: #3b82f6 !important;
+        }
+
+        .btn-next:hover {
+            background: #2563eb !important;
+        }
+
+        .call-status {
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #9ca3af;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active {
+            background: #10b981;
+        }
+
+        .status-dot.paused {
+            background: #f59e0b;
+        }
+
+        .status-dot.calling {
+            background: #3b82f6;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .btn-primary {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .btn-primary.active {
+            background: #ef4444;
+        }
+
+        .btn-primary.active:hover {
+            background: #dc2626;
+        }
+
+        .secondary-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            background: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .btn-secondary.btn-danger {
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+
+        .btn-secondary.btn-danger:hover {
+            background: #fef2f2;
+            border-color: #dc2626;
+        }
+
+        /* Queue Section */
+        .queue-section {
+            padding: 20px;
+        }
+
+        .sdk-warning {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 12px 16px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .sdk-warning.hidden {
+            display: none;
+        }
+
+        .sdk-warning.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .queue-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn-queue {
+            flex: 1;
+            background: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-queue:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .queue-empty {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .phone-icon-large {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .empty-message {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .empty-submessage {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        /* Queue List */
+        .queue-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .queue-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .queue-item:hover {
+            border-color: #2563eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .queue-item.calling {
+            background: #dbeafe;
+            border-color: #2563eb;
+        }
+
+        .queue-item.completed {
+            opacity: 0.6;
+        }
+
+        .queue-item-info {
+            flex: 1;
+        }
+
+        .queue-item-name {
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .queue-item-phone {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .queue-item-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .queue-item-status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .queue-item-status.calling {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .queue-item-status.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .queue-item-status.skipped {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .queue-item.skipped {
+            opacity: 0.5;
+        }
+
+        @media (max-width: 480px) {
+            .stats-container {
+                flex-direction: column;
+            }
+            
+            .secondary-buttons {
+                flex-direction: column;
+            }
+            
+            .queue-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="widget-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <span class="phone-icon">📞</span>
+                <span class="header-title">Power Dialler</span>
+            </div>
+            <div class="header-right">
+                <button class="icon-button" id="settingsBtn" title="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243-4.243m-4.242 0l-4.243 4.243m8.485 0l-4.243-4.243m-4.242 0l-4.243 4.243"></path>
+                    </svg>
+                </button>
+                <button class="icon-button" id="minimizeBtn" title="Minimize">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Statistics Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-label">TOTAL IN QUEUE</div>
+                <div class="stat-value" id="totalQueue">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">REMAINING</div>
+                <div class="stat-value" id="remaining">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">CALLED</div>
+                <div class="stat-value" id="called">0</div>
+            </div>
+        </div>
+
+        <!-- Auto-Dialing Controls -->
+        <div class="controls-section">
+            <h3 class="section-title">AUTO-DIALING CONTROLS</h3>
+            <div class="controls-buttons">
+                <div class="primary-controls">
+                    <button class="btn-primary" id="startCallingBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Start Calling
+                    </button>
+                    <button class="btn-primary btn-pause" id="pauseBtn" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                        </svg>
+                        Pause
+                    </button>
+                    <button class="btn-primary btn-next" id="nextCallBtn" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            <line x1="19" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Next Call
+                    </button>
+                </div>
+                <div class="secondary-buttons">
+                    <button class="btn-secondary" id="resetBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                            <path d="M3 21v-5h5"></path>
+                        </svg>
+                        Reset
+                    </button>
+                    <button class="btn-secondary btn-danger" id="clearBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Clear
+                    </button>
+                </div>
+            </div>
+            <div class="call-status" id="callStatus" style="display: none;">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Ready</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call Queue Section -->
+        <div class="queue-section">
+            <h3 class="section-title">CALL QUEUE</h3>
+            <div class="sdk-warning" id="sdkWarning">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                CRM SDK not detected
+            </div>
+            <div class="queue-actions">
+                <button class="btn-queue" id="addFromCrmBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Add from CRM
+                </button>
+                <button class="btn-queue" id="addTestContactsBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    + Test Contacts
+                </button>
+            </div>
+            <div class="queue-empty" id="queueEmpty">
+                <div class="phone-icon-large">📞</div>
+                <div class="empty-message">No Records in Queue</div>
+                <div class="empty-submessage">Records with the "Power Dial" tag will appear here</div>
+            </div>
+            <div class="queue-list" id="queueList" style="display: none;">
+                <!-- Queue items will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Power Dialler Configuration
+        const PowerDiallerConfig = {
+            voiceSDK: {
+                initOptions: {}
+            },
+            crm: {
+                defaultModule: 'Contacts',
+                tagName: 'Power Dial',
+                fields: ['id', 'Full_Name', 'First_Name', 'Last_Name', 'Phone', 'Mobile', 'Tag']
+            },
+            dialler: {
+                callDelay: 3000,
+                autoStart: false,
+                maxRetries: 3,
+                retryDelay: 5000
+            },
+            ui: {
+                showTestContacts: true,
+                showSettings: true
+            }
+        };
+
+        // Power Dialler Widget - Zoho CRM Integration
+        class PowerDialler {
+            constructor(config = {}) {
+                this.queue = [];
+                this.currentIndex = 0;
+                this.isCalling = false;
+                this.callInterval = null;
+                this.zohoVoiceSDK = null;
+                this.zohoCRMSDK = null;
+                this.currentCall = null; // Track active call
+                this.isOnCall = false; // Track if user is on an active call
+                this.callState = 'idle'; // idle, dialing, ringing, connected, ended
+                this.isPaused = false; // Track if dialling is paused
+                this.autoDialMode = true; // true = auto, false = manual
+                
+                this.config = {
+                    callDelay: config.callDelay || PowerDiallerConfig.dialler.callDelay,
+                    tagName: config.tagName || PowerDiallerConfig.crm.tagName,
+                    defaultModule: config.defaultModule || PowerDiallerConfig.crm.defaultModule,
+                    autoStart: config.autoStart || PowerDiallerConfig.dialler.autoStart,
+                    waitForCallEnd: config.waitForCallEnd !== undefined ? config.waitForCallEnd : true // Wait for call to end before next
+                };
+                
+                this.init();
+            }
+
+            async init() {
+                this.checkCRMSDK();
+                await this.initZohoVoiceSDK();
+                this.setupCallListeners();
+                this.bindEvents();
+                this.loadQueueFromCRM();
+                
+                if (this.config.autoStart) {
+                    setTimeout(() => {
+                        if (this.queue.length > 0 && this.zohoVoiceSDK) {
+                            this.startCalling();
+                        }
+                    }, 2000);
+                }
+            }
+
+            checkCRMSDK() {
+                // Check current window
+                if (typeof ZOHO !== 'undefined' && ZOHO.CRM) {
+                    this.zohoCRMSDK = ZOHO.CRM;
+                    console.log('✅ Zoho CRM SDK detected in current window');
+                    console.log('Available CRM API methods:', Object.keys(ZOHO.CRM.API || {}));
+                    this.hideSDKWarning();
+                    return;
+                }
+                
+                // Check parent window (for iframe/web tab context)
+                try {
+                    if (window.parent && window.parent !== window) {
+                        if (typeof window.parent.ZOHO !== 'undefined' && window.parent.ZOHO.CRM) {
+                            this.zohoCRMSDK = window.parent.ZOHO.CRM;
+                            console.log('✅ Zoho CRM SDK detected in parent window');
+                            console.log('Available CRM API methods:', Object.keys(window.parent.ZOHO.CRM.API || {}));
+                            this.hideSDKWarning();
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Cannot access parent window (cross-origin):', e.message);
+                }
+                
+                // Check top window
+                try {
+                    if (window.top && window.top !== window) {
+                        if (typeof window.top.ZOHO !== 'undefined' && window.top.ZOHO.CRM) {
+                            this.zohoCRMSDK = window.top.ZOHO.CRM;
+                            console.log('✅ Zoho CRM SDK detected in top window');
+                            console.log('Available CRM API methods:', Object.keys(window.top.ZOHO.CRM.API || {}));
+                            this.hideSDKWarning();
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Cannot access top window (cross-origin):', e.message);
+                }
+                
+                // If still not found, wait and retry
+                console.warn('⚠️ Zoho CRM SDK not detected immediately');
+                console.log('Widget is running in:', window.location.href);
+                console.log('Is iframe:', window.self !== window.top);
+                
+                // Retry after a delay
+                setTimeout(() => {
+                    this.checkCRMSDK();
+                }, 2000);
+            }
+
+            async initZohoVoiceSDK() {
+                try {
+                    // Wait longer for SDKs to load
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    let SDK = null;
+                    let sdkLocation = null;
+                    
+                    // Helper function to check SDK in a window object
+                    const checkWindowForSDK = (win, windowName) => {
+                        // Method 1: Check ZOHO.Voice
+                        if (typeof win.ZOHO !== 'undefined' && win.ZOHO.Voice) {
+                            SDK = win.ZOHO.Voice;
+                            sdkLocation = `${windowName}.ZOHO.Voice`;
+                            console.log(`✅ Found Zoho Voice SDK at ${sdkLocation}`);
+                            return true;
+                        }
+                        // Method 2: Check ZOHO.CRM.UI.Voice
+                        if (typeof win.ZOHO !== 'undefined' && win.ZOHO.CRM && win.ZOHO.CRM.UI && win.ZOHO.CRM.UI.Voice) {
+                            SDK = win.ZOHO.CRM.UI.Voice;
+                            sdkLocation = `${windowName}.ZOHO.CRM.UI.Voice`;
+                            console.log(`✅ Found Zoho Voice SDK at ${sdkLocation}`);
+                            return true;
+                        }
+                        // Method 3: Check ZohoVoiceSDK
+                        if (typeof win.ZohoVoiceSDK !== 'undefined') {
+                            SDK = win.ZohoVoiceSDK;
+                            sdkLocation = `${windowName}.ZohoVoiceSDK`;
+                            console.log(`✅ Found Zoho Voice SDK at ${sdkLocation}`);
+                            return true;
+                        }
+                        // Method 4: Check ZDialer
+                        if (typeof win.ZDialer !== 'undefined') {
+                            SDK = win.ZDialer;
+                            sdkLocation = `${windowName}.ZDialer`;
+                            console.log(`✅ Found ZDialer at ${sdkLocation}`);
+                            return true;
+                        }
+                        return false;
+                    };
+                    
+                    // Check current window first
+                    if (checkWindowForSDK(window, 'window')) {
+                        // Found it!
+                    }
+                    // Check parent window (for iframe/web tab)
+                    else {
+                        try {
+                            if (window.parent && window.parent !== window) {
+                                if (checkWindowForSDK(window.parent, 'window.parent')) {
+                                    // Found in parent!
+                                }
+                            }
+                        } catch (e) {
+                            console.log('Cannot access parent window for Voice SDK:', e.message);
+                        }
+                        
+                        // Check top window
+                        try {
+                            if (window.top && window.top !== window) {
+                                if (checkWindowForSDK(window.top, 'window.top')) {
+                                    // Found in top!
+                                }
+                            }
+                        } catch (e) {
+                            console.log('Cannot access top window for Voice SDK:', e.message);
+                        }
+                    }
+                    
+                    // Method 5: Check for click-to-call functionality (fallback)
+                    if (!SDK && typeof window !== 'undefined' && window.ZOHO && window.ZOHO.CRM && window.ZOHO.CRM.UI) {
+                        // Try to use CRM's built-in call functionality
+                        console.log('⚠️ Direct Voice SDK not found, checking for CRM call functions...');
+                        // We'll handle this in makeCall method
+                    }
+                    
+                    if (SDK) {
+                        this.zohoVoiceSDK = SDK;
+                        this.sdkLocation = sdkLocation;
+                        
+                        const initOptions = PowerDiallerConfig.voiceSDK.initOptions;
+                        
+                        if (typeof SDK.init === 'function') {
+                            try {
+                                await SDK.init(initOptions);
+                                console.log('✅ Zoho Voice SDK initialized successfully');
+                            } catch (initError) {
+                                console.warn('SDK init() failed, but SDK is available:', initError);
+                                console.log('SDK may already be initialized');
+                            }
+                        } else {
+                            console.log('✅ Zoho Voice SDK found but no init() method - may already be initialized');
+                        }
+                        
+                        this.hideSDKWarning();
+                        return true;
+                    } else {
+                        console.warn('⚠️ Zoho Voice SDK not found. Checking alternatives...');
+                        console.log('Available ZOHO objects:', typeof ZOHO !== 'undefined' ? Object.keys(ZOHO) : 'ZOHO not defined');
+                        
+                        // Try to find any call-related functions
+                        if (typeof ZOHO !== 'undefined') {
+                            console.log('ZOHO structure:', {
+                                CRM: typeof ZOHO.CRM !== 'undefined',
+                                Voice: typeof ZOHO.Voice !== 'undefined',
+                                UI: typeof ZOHO.CRM !== 'undefined' && typeof ZOHO.CRM.UI !== 'undefined'
+                            });
+                        }
+                        
+                        // Set a flag so we can try alternative methods
+                        this.zohoVoiceSDK = null;
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('❌ Error initializing Zoho Voice SDK:', error);
+                    this.zohoVoiceSDK = null;
+                    return false;
+                }
+            }
+
+            setupCallListeners() {
+                // Listen for call state changes from Zoho Voice SDK
+                if (this.zohoVoiceSDK) {
+                    // Method 1: Event listeners (if SDK supports it)
+                    if (typeof this.zohoVoiceSDK.on === 'function') {
+                        this.zohoVoiceSDK.on('callStateChanged', (event) => {
+                            this.handleCallStateChange(event);
+                        });
+                        this.zohoVoiceSDK.on('callEnded', (event) => {
+                            this.handleCallEnded(event);
+                        });
+                        console.log('Call event listeners registered');
+                    }
+                    // Method 2: Check for call status periodically
+                    else {
+                        // Fallback: Poll call status
+                        this.startCallStatusPolling();
+                    }
+                }
+
+                // Also listen to ZOHO.Voice events if available
+                if (typeof ZOHO !== 'undefined' && ZOHO.Voice) {
+                    if (typeof ZOHO.Voice.on === 'function') {
+                        ZOHO.Voice.on('callStateChanged', (event) => {
+                            this.handleCallStateChange(event);
+                        });
+                        ZOHO.Voice.on('callEnded', (event) => {
+                            this.handleCallEnded(event);
+                        });
+                    }
+                }
+
+                // Listen to ZDialer events if available
+                if (typeof window !== 'undefined' && window.ZDialer) {
+                    if (typeof window.ZDialer.on === 'function') {
+                        window.ZDialer.on('callEnded', (event) => {
+                            this.handleCallEnded(event);
+                        });
+                    }
+                }
+            }
+
+            startCallStatusPolling() {
+                // Poll every 2 seconds to check call status
+                setInterval(() => {
+                    if (this.isOnCall && this.zohoVoiceSDK) {
+                        this.checkCallStatus();
+                    }
+                }, 2000);
+            }
+
+            async checkCallStatus() {
+                try {
+                    // Try to get current call status from SDK
+                    let callStatus = null;
+                    
+                    if (this.zohoVoiceSDK && typeof this.zohoVoiceSDK.getCallStatus === 'function') {
+                        callStatus = await this.zohoVoiceSDK.getCallStatus();
+                    } else if (typeof ZOHO !== 'undefined' && ZOHO.Voice && typeof ZOHO.Voice.getCallStatus === 'function') {
+                        callStatus = await ZOHO.Voice.getCallStatus();
+                    }
+                    
+                    if (callStatus) {
+                        if (callStatus.state === 'ended' || callStatus.state === 'disconnected' || callStatus.state === 'failed') {
+                            this.handleCallEnded({ status: callStatus });
+                        } else if (callStatus.state === 'connected' || callStatus.state === 'active') {
+                            this.isOnCall = true;
+                            this.callState = 'connected';
+                        }
+                    }
+                } catch (error) {
+                    // If we can't check status, assume call might have ended
+                    // This is a fallback - better to have some logic than none
+                }
+            }
+
+            handleCallStateChange(event) {
+                console.log('Call state changed:', event);
+                if (event && event.state) {
+                    this.callState = event.state;
+                    
+                    if (event.state === 'connected' || event.state === 'active') {
+                        this.isOnCall = true;
+                        console.log('Call connected - user is now on call');
+                    } else if (event.state === 'ended' || event.state === 'disconnected') {
+                        this.handleCallEnded(event);
+                    }
+                }
+            }
+
+            handleCallEnded(event) {
+                console.log('Call ended:', event);
+                this.isOnCall = false;
+                this.callState = 'ended';
+                
+                // Mark current contact as completed
+                if (this.queue[this.currentIndex]) {
+                    this.queue[this.currentIndex].status = 'completed';
+                    this.currentIndex++;
+                    this.updateQueueDisplay();
+                    this.updateStatistics();
+                }
+                
+                this.currentCall = null;
+                this.updateCallStatus('Call ended', 'idle');
+                
+                // If autodialling is active and not paused, proceed to next call
+                if (this.isCalling && !this.isPaused) {
+                    console.log('Call ended - proceeding to next contact');
+                    // Wait a moment before next call (user might need to hang up, take notes, etc.)
+                    setTimeout(() => {
+                        if (this.isCalling && !this.isPaused) {
+                            this.updateCallStatus('Preparing next call...', 'calling');
+                            this.processNextCall();
+                        }
+                    }, this.config.callDelay || 3000);
+                }
+            }
+
+            showSDKWarning() {
+                const warning = document.getElementById('sdkWarning');
+                if (warning) {
+                    warning.classList.remove('hidden', 'success');
+                    warning.textContent = 'CRM SDK not detected';
+                }
+            }
+
+            hideSDKWarning() {
+                const warning = document.getElementById('sdkWarning');
+                if (warning) {
+                    warning.classList.add('success');
+                    warning.textContent = 'CRM SDK connected';
+                }
+            }
+
+            bindEvents() {
+                const startBtn = document.getElementById('startCallingBtn');
+                if (startBtn) startBtn.addEventListener('click', () => this.startCalling());
+
+                const pauseBtn = document.getElementById('pauseBtn');
+                if (pauseBtn) pauseBtn.addEventListener('click', () => this.pauseCalling());
+
+                const nextCallBtn = document.getElementById('nextCallBtn');
+                if (nextCallBtn) nextCallBtn.addEventListener('click', () => this.nextCall());
+
+                const resetBtn = document.getElementById('resetBtn');
+                if (resetBtn) resetBtn.addEventListener('click', () => this.reset());
+
+                const clearBtn = document.getElementById('clearBtn');
+                if (clearBtn) clearBtn.addEventListener('click', () => this.clearQueue());
+
+                const addFromCrmBtn = document.getElementById('addFromCrmBtn');
+                if (addFromCrmBtn) addFromCrmBtn.addEventListener('click', () => this.addFromCRM());
+
+                const addTestContactsBtn = document.getElementById('addTestContactsBtn');
+                if (addTestContactsBtn) addTestContactsBtn.addEventListener('click', () => this.addTestContacts());
+
+                const settingsBtn = document.getElementById('settingsBtn');
+                if (settingsBtn) settingsBtn.addEventListener('click', () => this.openSettings());
+            }
+
+            async loadQueueFromCRM() {
+                if (!this.zohoCRMSDK) {
+                    console.warn('CRM SDK not available');
+                    return;
+                }
+
+                try {
+                    const records = await this.fetchPowerDialRecords();
+                    this.queue = records;
+                    this.updateQueueDisplay();
+                    this.updateStatistics();
+                } catch (error) {
+                    console.error('Error loading queue from CRM:', error);
+                }
+            }
+
+            async fetchPowerDialRecords() {
+                // Re-check SDK if not available
+                if (!this.zohoCRMSDK) {
+                    console.log('SDK not found, checking parent window...');
+                    
+                    // Try to get SDK from parent window
+                    try {
+                        if (window.parent && window.parent !== window && window.parent.ZOHO && window.parent.ZOHO.CRM) {
+                            this.zohoCRMSDK = window.parent.ZOHO.CRM;
+                            console.log('✅ Got CRM SDK from parent window');
+                        } else if (window.top && window.top !== window && window.top.ZOHO && window.top.ZOHO.CRM) {
+                            this.zohoCRMSDK = window.top.ZOHO.CRM;
+                            console.log('✅ Got CRM SDK from top window');
+                        }
+                    } catch (e) {
+                        console.log('Cannot access parent window:', e.message);
+                    }
+                    
+                    if (!this.zohoCRMSDK) {
+                        console.error('Cannot fetch records: CRM SDK not available');
+                        console.log('Widget context:', {
+                            isIframe: window.self !== window.top,
+                            hasParent: window.parent !== window,
+                            url: window.location.href
+                        });
+                        return [];
+                    }
+                }
+
+                try {
+                    const module = this.config.defaultModule;
+                    const tagName = this.config.tagName;
+                    
+                    console.log(`Fetching records from ${module} with tag "${tagName}"...`);
+                    
+                    let response;
+                    try {
+                        console.log('Attempting searchRecords with tag filter...');
+                        response = await this.zohoCRMSDK.API.searchRecords({
+                            Entity: module,
+                            searchCondition: `(Tag:equals:${tagName})`,
+                            sortBy: 'Created_Time',
+                            sortOrder: 'desc'
+                        });
+                        console.log(`✅ Search returned ${response.data?.length || 0} records`);
+                    } catch (searchError) {
+                        console.log('Tag search not supported, fetching all records and filtering...');
+                        console.log('Search error:', searchError);
+                        
+                        response = await this.zohoCRMSDK.API.getAllRecords({
+                            Entity: module,
+                            sortBy: 'Created_Time',
+                            sortOrder: 'desc',
+                            perPage: 200
+                        });
+                        console.log(`✅ Fetched ${response.data?.length || 0} total records`);
+                    }
+
+                    const records = response.data || [];
+                    console.log(`Processing ${records.length} records...`);
+                    
+                    const powerDialRecords = records.filter(record => {
+                        if (record.Tag) {
+                            if (Array.isArray(record.Tag)) {
+                                return record.Tag.some(tag => {
+                                    const tagValue = typeof tag === 'string' ? tag : tag.name;
+                                    return tagValue === tagName || tagValue?.includes(tagName);
+                                });
+                            } else if (typeof record.Tag === 'string') {
+                                return record.Tag.includes(tagName);
+                            }
+                        }
+                        return false;
+                    });
+
+                    console.log(`✅ Found ${powerDialRecords.length} records with "${tagName}" tag`);
+
+                    return powerDialRecords.map(record => {
+                        const name = record.Full_Name || 
+                            (record.First_Name && record.Last_Name ? `${record.First_Name} ${record.Last_Name}` : 
+                             record.First_Name || record.Last_Name || 'Unknown');
+                        const phone = record.Phone || record.Mobile || record.Phone_Number || '';
+                        
+                        return {
+                            id: record.id,
+                            name: name,
+                            phone: phone,
+                            status: 'pending',
+                            record: record
+                        };
+                    });
+                } catch (error) {
+                    console.error('❌ Error fetching Power Dial records:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        module: this.config.defaultModule
+                    });
+                    alert(`Error loading contacts: ${error.message}`);
+                    return [];
+                }
+            }
+
+            async addFromCRM() {
+                if (!this.zohoCRMSDK) {
+                    alert('CRM SDK not available. Please ensure you are running this widget within Zoho CRM.');
+                    return;
+                }
+
+                try {
+                    await this.loadQueueFromCRM();
+                    alert(`Loaded ${this.queue.length} records from CRM`);
+                } catch (error) {
+                    console.error('Error adding from CRM:', error);
+                    alert('Error loading records from CRM. Please try again.');
+                }
+            }
+
+            addTestContacts() {
+                const testContacts = [
+                    { id: 'test1', name: 'John Doe', phone: '+1234567890', status: 'pending' },
+                    { id: 'test2', name: 'Jane Smith', phone: '+1234567891', status: 'pending' },
+                    { id: 'test3', name: 'Bob Johnson', phone: '+1234567892', status: 'pending' },
+                    { id: 'test4', name: 'Alice Williams', phone: '+1234567893', status: 'pending' },
+                    { id: 'test5', name: 'Charlie Brown', phone: '+1234567894', status: 'pending' }
+                ];
+
+                this.queue = [...this.queue, ...testContacts];
+                this.updateQueueDisplay();
+                this.updateStatistics();
+            }
+
+            startCalling() {
+                if (this.queue.length === 0) {
+                    alert('No records in queue. Please add contacts first.');
+                    return;
+                }
+
+                // Re-check SDK if not found
+                if (!this.zohoVoiceSDK) {
+                    console.log('SDK not found, attempting to re-initialize...');
+                    this.initZohoVoiceSDK().then(() => {
+                        if (!this.zohoVoiceSDK) {
+                            alert('Zoho Voice SDK not found. Please ensure:\n\n1. Zoho Voice is installed in CRM (Setup → Channels → Telephony)\n2. ZDialer browser extension is installed\n3. You are logged into Zoho Voice\n4. Refresh the page and try again');
+                            return;
+                        } else {
+                            // Retry starting
+                            this.startCalling();
+                        }
+                    });
+                    return;
+                }
+
+                // If paused, resume
+                if (this.isPaused) {
+                    this.resumeCalling();
+                    return;
+                }
+
+                this.isCalling = true;
+                this.isPaused = false;
+                this.updateControlButtons();
+                this.updateCallStatus('Starting...', 'calling');
+
+                this.processNextCall();
+            }
+
+            pauseCalling() {
+                this.isPaused = true;
+                this.updateControlButtons();
+                this.updateCallStatus('Paused', 'paused');
+                console.log('Dialling paused');
+            }
+
+            resumeCalling() {
+                this.isPaused = false;
+                this.updateControlButtons();
+                this.updateCallStatus('Resuming...', 'calling');
+                
+                // Continue from where we left off
+                if (this.isCalling) {
+                    this.processNextCall();
+                }
+            }
+
+            nextCall() {
+                // Manually advance to next call
+                if (this.isOnCall) {
+                    if (confirm('You are currently on a call. Do you want to skip to the next contact?')) {
+                        // Mark current as skipped and move to next
+                        if (this.queue[this.currentIndex]) {
+                            this.queue[this.currentIndex].status = 'skipped';
+                        }
+                        this.currentIndex++;
+                        this.updateQueueDisplay();
+                        this.updateStatistics();
+                        this.processNextCall();
+                    }
+                } else {
+                    // Not on call, just move to next
+                    if (this.queue[this.currentIndex]) {
+                        this.queue[this.currentIndex].status = 'skipped';
+                    }
+                    this.currentIndex++;
+                    this.updateQueueDisplay();
+                    this.updateStatistics();
+                    this.processNextCall();
+                }
+            }
+
+            stopCalling() {
+                this.isCalling = false;
+                this.isPaused = false;
+                this.updateControlButtons();
+                this.updateCallStatus('Stopped', 'idle');
+
+                if (this.callInterval) {
+                    clearTimeout(this.callInterval);
+                    this.callInterval = null;
+                }
+            }
+
+            updateControlButtons() {
+                const startBtn = document.getElementById('startCallingBtn');
+                const pauseBtn = document.getElementById('pauseBtn');
+                const nextCallBtn = document.getElementById('nextCallBtn');
+
+                if (this.isCalling && !this.isPaused) {
+                    // Active dialling
+                    if (startBtn) startBtn.style.display = 'none';
+                    if (pauseBtn) pauseBtn.style.display = 'flex';
+                    if (nextCallBtn) nextCallBtn.style.display = 'flex';
+                } else if (this.isCalling && this.isPaused) {
+                    // Paused
+                    if (startBtn) {
+                        startBtn.style.display = 'flex';
+                        startBtn.innerHTML = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            Resume
+                        `;
+                    }
+                    if (pauseBtn) pauseBtn.style.display = 'none';
+                    if (nextCallBtn) nextCallBtn.style.display = 'flex';
+                } else {
+                    // Stopped
+                    if (startBtn) {
+                        startBtn.style.display = 'flex';
+                        startBtn.innerHTML = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            Start Calling
+                        `;
+                    }
+                    if (pauseBtn) pauseBtn.style.display = 'none';
+                    if (nextCallBtn) nextCallBtn.style.display = 'none';
+                }
+            }
+
+            updateCallStatus(text, state) {
+                const statusDiv = document.getElementById('callStatus');
+                const statusText = document.getElementById('statusText');
+                const statusDot = document.querySelector('.status-dot');
+
+                if (statusDiv) {
+                    statusDiv.style.display = 'flex';
+                }
+                if (statusText) {
+                    statusText.textContent = text;
+                }
+                if (statusDot) {
+                    statusDot.className = 'status-dot';
+                    if (state === 'calling') {
+                        statusDot.classList.add('calling');
+                    } else if (state === 'paused') {
+                        statusDot.classList.add('paused');
+                    } else if (state === 'active') {
+                        statusDot.classList.add('active');
+                    }
+                }
+            }
+
+            async processNextCall() {
+                // Check if paused
+                if (this.isPaused) {
+                    console.log('Dialling is paused');
+                    return;
+                }
+
+                if (!this.isCalling || this.currentIndex >= this.queue.length) {
+                    this.stopCalling();
+                    this.updateCallStatus('All calls completed', 'idle');
+                    return;
+                }
+
+                // If waiting for call to end and user is still on call, wait
+                if (this.config.waitForCallEnd && this.isOnCall) {
+                    console.log('User is still on call - waiting for call to end...');
+                    this.updateCallStatus('On call - waiting...', 'active');
+                    // Check again in 2 seconds
+                    setTimeout(() => this.processNextCall(), 2000);
+                    return;
+                }
+
+                const contact = this.queue[this.currentIndex];
+                
+                if (!contact.phone) {
+                    console.warn(`No phone number for ${contact.name}`);
+                    this.currentIndex++;
+                    this.updateStatistics();
+                    setTimeout(() => this.processNextCall(), this.config.callDelay);
+                    return;
+                }
+
+                contact.status = 'calling';
+                this.updateQueueDisplay();
+                this.updateStatistics();
+                this.updateCallStatus(`Calling ${contact.name}...`, 'calling');
+
+                try {
+                    const callResult = await this.makeCall(contact);
+                    this.currentCall = callResult;
+                    this.callState = 'dialing';
+                    this.updateCallStatus(`Connected to ${contact.name}`, 'active');
+                    
+                    // If waitForCallEnd is enabled, wait for call to actually end
+                    if (this.config.waitForCallEnd) {
+                        // Don't move to next call yet - wait for handleCallEnded() to be called
+                        console.log('Call initiated - waiting for call to end before next contact');
+                        // The handleCallEnded() method will call processNextCall() when call ends
+                    } else {
+                        // Old behavior: wait fixed delay then move to next
+                        setTimeout(() => {
+                            if (!this.isPaused) {
+                                contact.status = 'completed';
+                                this.currentIndex++;
+                                this.updateQueueDisplay();
+                                this.updateStatistics();
+                                
+                                if (this.isCalling && !this.isPaused) {
+                                    setTimeout(() => this.processNextCall(), this.config.callDelay);
+                                }
+                            }
+                        }, 2000);
+                    }
+                    
+                } catch (error) {
+                    console.error(`Error calling ${contact.name}:`, error);
+                    contact.status = 'pending';
+                    this.currentIndex++;
+                    this.updateQueueDisplay();
+                    this.updateStatistics();
+                    
+                    // Wait before trying next call
+                    if (this.isCalling) {
+                        setTimeout(() => this.processNextCall(), this.config.callDelay);
+                    }
+                }
+            }
+
+            async makeCall(contact) {
+                // Try multiple methods to make the call
+                try {
+                    let callResult = null;
+                    let methodUsed = null;
+                    
+                    // Method 1: Use stored SDK reference
+                    if (this.zohoVoiceSDK) {
+                        const availableMethods = Object.keys(this.zohoVoiceSDK).filter(key => 
+                            typeof this.zohoVoiceSDK[key] === 'function'
+                        );
+                        console.log('Available SDK methods:', availableMethods);
+                        
+                        if (typeof this.zohoVoiceSDK.makeCall === 'function') {
+                            methodUsed = 'SDK.makeCall()';
+                            callResult = await this.zohoVoiceSDK.makeCall({
+                                phoneNumber: contact.phone,
+                                contactId: contact.id,
+                                contactName: contact.name
+                            });
+                        } else if (typeof this.zohoVoiceSDK.initiateCall === 'function') {
+                            methodUsed = 'SDK.initiateCall()';
+                            callResult = await this.zohoVoiceSDK.initiateCall({
+                                phoneNumber: contact.phone,
+                                contactId: contact.id,
+                                contactName: contact.name
+                            });
+                        } else if (typeof this.zohoVoiceSDK.call === 'function') {
+                            methodUsed = 'SDK.call()';
+                            callResult = await this.zohoVoiceSDK.call(contact.phone, {
+                                contactId: contact.id,
+                                contactName: contact.name
+                            });
+                        } else if (typeof this.zohoVoiceSDK.dial === 'function') {
+                            methodUsed = 'SDK.dial()';
+                            callResult = await this.zohoVoiceSDK.dial(contact.phone, {
+                                contactId: contact.id,
+                                contactName: contact.name
+                            });
+                        }
+                    }
+                    
+                    // Method 2: Try ZOHO.Voice directly (check multiple windows)
+                    const checkVoiceInWindow = (win, winName) => {
+                        if (!callResult && typeof win.ZOHO !== 'undefined' && win.ZOHO.Voice) {
+                            if (typeof win.ZOHO.Voice.makeCall === 'function') {
+                                methodUsed = `${winName}.ZOHO.Voice.makeCall()`;
+                                callResult = win.ZOHO.Voice.makeCall({
+                                    phoneNumber: contact.phone,
+                                    contactId: contact.id,
+                                    contactName: contact.name
+                                });
+                                return true;
+                            } else if (typeof win.ZOHO.Voice.dial === 'function') {
+                                methodUsed = `${winName}.ZOHO.Voice.dial()`;
+                                callResult = win.ZOHO.Voice.dial(contact.phone);
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                    
+                    if (!callResult) {
+                        checkVoiceInWindow(window, 'window');
+                    }
+                    if (!callResult && window.parent && window.parent !== window) {
+                        try {
+                            checkVoiceInWindow(window.parent, 'window.parent');
+                        } catch (e) {
+                            console.log('Cannot access parent for Voice:', e.message);
+                        }
+                    }
+                    if (!callResult && window.top && window.top !== window) {
+                        try {
+                            checkVoiceInWindow(window.top, 'window.top');
+                        } catch (e) {
+                            console.log('Cannot access top for Voice:', e.message);
+                        }
+                    }
+                    
+                    // Method 3: Try ZDialer extension (check multiple windows)
+                    const checkZDialerInWindow = (win, winName) => {
+                        if (!callResult && typeof win.ZDialer !== 'undefined') {
+                            if (typeof win.ZDialer.dial === 'function') {
+                                methodUsed = `${winName}.ZDialer.dial()`;
+                                callResult = win.ZDialer.dial(contact.phone);
+                                return true;
+                            } else if (typeof win.ZDialer.makeCall === 'function') {
+                                methodUsed = `${winName}.ZDialer.makeCall()`;
+                                callResult = win.ZDialer.makeCall(contact.phone);
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                    
+                    if (!callResult) {
+                        checkZDialerInWindow(window, 'window');
+                    }
+                    if (!callResult && window.parent && window.parent !== window) {
+                        try {
+                            checkZDialerInWindow(window.parent, 'window.parent');
+                        } catch (e) {}
+                    }
+                    if (!callResult && window.top && window.top !== window) {
+                        try {
+                            checkZDialerInWindow(window.top, 'window.top');
+                        } catch (e) {}
+                    }
+                    
+                    // Method 4: Try CRM UI click-to-call (fallback)
+                    if (!callResult && typeof ZOHO !== 'undefined' && ZOHO.CRM && ZOHO.CRM.UI) {
+                        console.log('Attempting CRM UI call method...');
+                        if (typeof ZOHO.CRM.UI.triggerCall === 'function') {
+                            methodUsed = 'ZOHO.CRM.UI.triggerCall()';
+                            callResult = await ZOHO.CRM.UI.triggerCall(contact.phone);
+                        }
+                    }
+                    
+                    // Method 5: Try creating a click-to-call link (last resort)
+                    if (!callResult) {
+                        console.warn('No SDK method found, trying click-to-call link...');
+                        // Create a temporary link and click it
+                        const callLink = document.createElement('a');
+                        callLink.href = `tel:${contact.phone}`;
+                        callLink.style.display = 'none';
+                        document.body.appendChild(callLink);
+                        callLink.click();
+                        document.body.removeChild(callLink);
+                        methodUsed = 'tel: link';
+                        callResult = { success: true, method: 'tel_link' };
+                    }
+                    
+                    if (callResult) {
+                        console.log(`✅ Call initiated to ${contact.name} at ${contact.phone} using ${methodUsed}`);
+                        return callResult;
+                    } else {
+                        throw new Error('No call method available. Please ensure Zoho Voice is set up.');
+                    }
+                } catch (error) {
+                    console.error(`❌ Error making call to ${contact.name}:`, error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        contact: contact
+                    });
+                    throw error;
+                }
+            }
+
+            reset() {
+                if (confirm('Are you sure you want to reset the dialler? This will reset the call progress but keep the queue.')) {
+                    this.currentIndex = 0;
+                    this.queue.forEach(contact => {
+                        if (contact.status !== 'skipped') {
+                            contact.status = 'pending';
+                        }
+                    });
+                    this.updateQueueDisplay();
+                    this.updateStatistics();
+                    this.stopCalling();
+                    this.updateCallStatus('Reset', 'idle');
+                }
+            }
+
+            clearQueue() {
+                if (confirm('Are you sure you want to clear the entire queue?')) {
+                    this.queue = [];
+                    this.currentIndex = 0;
+                    this.updateQueueDisplay();
+                    this.updateStatistics();
+                    this.stopCalling();
+                }
+            }
+
+            updateStatistics() {
+                const totalQueue = this.queue.length;
+                const called = this.queue.filter(c => c.status === 'completed').length;
+                const remaining = totalQueue - called;
+
+                document.getElementById('totalQueue').textContent = totalQueue;
+                document.getElementById('remaining').textContent = remaining;
+                document.getElementById('called').textContent = called;
+            }
+
+            updateQueueDisplay() {
+                const queueList = document.getElementById('queueList');
+                const queueEmpty = document.getElementById('queueEmpty');
+
+                if (this.queue.length === 0) {
+                    if (queueList) queueList.style.display = 'none';
+                    if (queueEmpty) queueEmpty.style.display = 'block';
+                    return;
+                }
+
+                if (queueList) queueList.style.display = 'block';
+                if (queueEmpty) queueEmpty.style.display = 'none';
+
+                if (queueList) {
+                    queueList.innerHTML = this.queue.map((contact, index) => {
+                        const statusClass = contact.status || 'pending';
+                        const itemClass = `queue-item ${statusClass}`;
+                        
+                        const statusLabel = statusClass === 'pending' ? 'Pending' :
+                                          statusClass === 'calling' ? 'Calling...' :
+                                          statusClass === 'completed' ? 'Completed' :
+                                          statusClass === 'skipped' ? 'Skipped' :
+                                          statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+                        
+                        return `
+                            <div class="${itemClass}" data-index="${index}">
+                                <div class="queue-item-info">
+                                    <div class="queue-item-name">${contact.name || 'Unknown'}</div>
+                                    <div class="queue-item-phone">${contact.phone || 'No phone number'}</div>
+                                </div>
+                                <div class="queue-item-status ${statusClass}">
+                                    ${statusLabel}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            openSettings() {
+                alert('Settings feature coming soon!');
+            }
+        }
+
+        // Initialize the Power Dialler when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                window.powerDialler = new PowerDialler();
+            });
+        } else {
+            window.powerDialler = new PowerDialler();
+        }
+
+        // Re-check CRM SDK periodically (in case it loads asynchronously)
+        setInterval(() => {
+            if (window.powerDialler && !window.powerDialler.zohoCRMSDK) {
+                window.powerDialler.checkCRMSDK();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
+
